@@ -1,0 +1,15 @@
+{
+  "name": "cubes",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "parcel src/index.html"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "gl-matrix": "^3.3.0",
+    "lib": "^4.2.0",
+    "parcel-bundler": "^1.12.4",
+    "postcss-nested": "^4.2.1"
+  }
+}

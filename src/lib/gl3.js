@@ -1,0 +1,155 @@
+import { mat4, vec3 } from "gl-matrix";
+
+/** @type {WebGLRenderingContext} */
+export function createCtx(elm) {
+    /** @type {HTMLCanvasElement} */
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('width', '600px');
+    canvas.setAttribute('height', '400px');
+    elm.appendChild(canvas);
+
+    const gl = canvas.getContext('webgl');
+    gl.viewportWidth = canvas.width;
+    gl.viewportHeight = canvas.height;
+    return gl;
+}
+
+// Fragment shader
+const fsShader = `
+    precision mediump float;
+
+    void main(void) {
+        gl_FragColor = vec4(0.9, 0.3, 0.6, 1.0);
+    }
+`;
+
+// vertex shader
+const vsShader = `
+    attribute vec3 position;
+    uniform mat4 transform;
+    uniform mat4 cameraTransform;
+
+    void main(void) {
+        gl_Position = cameraTransform * transform * vec4(position, 1);
+    }
+`;
+
+export function createShader(gl, source, type) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        throw("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));
+    }
+
+    return shader;
+}
+
+export function getVShader(gl, source) {
+    return createShader(gl, source, gl.VERTEX_SHADER);
+}
+
+export function getTShader(gl, source) {
+    return createShader(gl, source, gl.FRAGMENT_SHADER);
+}
+
+/** @type WebGLProgram */
+export function initShaders(gl) {
+    const shaderProgram = gl.createProgram();
+
+    gl.attachShader(shaderProgram, getVShader(gl, vsShader));
+    gl.attachShader(shaderProgram, getTShader(gl, fsShader));
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        throw('Could not initalize shaders!');
+    }
+
+    shaderProgram.positionLocation = gl.getAttribLocation(shaderProgram, "position");
+    shaderProgram.transformLocation = gl.getUniformLocation(shaderProgram, "transform");
+    shaderProgram.cameraTransformLocation = gl.getUniformLocation(shaderProgram, "cameraTransform");
+
+    gl.enableVertexAttribArray(shaderProgram.positionLocation);
+
+    return shaderProgram;
+}
+
+export function degToRad(deg) {
+    return deg * (Math.PI / 180);
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {Object} shaderProgram
+ *
+ * @returns void
+ */
+export function createTriangle(gl, shaderProgram) {
+    let vertices = [
+        0.0, 1.0, 0.0,
+        -1.0, -1.0, 0.0,
+        1.0, -1.0, 0.0
+    ];
+
+    /** @type {WebGLBuffer} */
+    const vertBuffer = gl.createBuffer();
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    // Position, rotation etc. Matrix
+    let mvMatrix = mat4.create();
+
+    return (pMatrix) => {
+        // Set shader to use
+        gl.useProgram(shaderProgram);
+
+        // Position our triangle
+        mat4.identity(mvMatrix);
+        mat4.translate (mvMatrix, mvMatrix, [0, 0, -3]);
+
+        // Pass model view projection to shader
+        // gl.uniformMatrix4fv(shader_prog.u_PerspLocation, false, pMatrix);
+        gl.uniformMatrix4fv(shaderProgram.transformLocation, false, mvMatrix);
+        gl.uniformMatrix4fv(shaderProgram.cameraTransformLocation, false, pMatrix);
+
+        // Add vertex data and prep the variable type.
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+        gl.enableVertexAttribArray(shaderProgram.positionLocation);
+        gl.vertexAttribPointer(shaderProgram.positionLocation, 3, gl.FLOAT, false, 0, 0);
+
+        //draw it!
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+}
+
+export function create(elm) {
+    // Configurables
+    const fieldOfView = degToRad(60);
+
+    // Setup webgl
+    const gl = createCtx(elm);
+    const shaderProgram = initShaders(gl);
+    const renderTriangle = createTriangle(gl, shaderProgram);
+
+    gl.clearColor(0.75, 0.85, 0.8, 1);
+    gl.enable(gl.DEPTH_TEST);
+
+    // Prepare perspective matrix
+    const pMatrix = mat4.create();
+    mat4.perspective(pMatrix, fieldOfView, gl.viewportWidth / gl.viewportHeight, 0.1, 50.0);
+
+    return () => {
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        renderTriangle(pMatrix);
+    }
+}
+
+
+export function gl(elm) {
+    const draw = create(elm);
+    draw();
+}
