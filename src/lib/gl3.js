@@ -16,21 +16,28 @@ export function createCtx(elm) {
 
 // Fragment shader
 const fsShader = `
-    precision mediump float;
+    varying lowp vec4 vColor;
 
     void main(void) {
-        gl_FragColor = vec4(0.9, 0.3, 0.6, 1.0);
+        //gl_FragColor = vec4(0.5, 0, 0.5, 1);
+        gl_FragColor = vColor;
     }
 `;
 
 // vertex shader
 const vsShader = `
     attribute vec3 position;
+
+    uniform vec4 color;
     uniform mat4 transform;
     uniform mat4 cameraTransform;
 
+    // Defined a color output to next shader
+    varying lowp vec4 vColor;
+
     void main(void) {
         gl_Position = cameraTransform * transform * vec4(position, 1);
+        vColor = color;
     }
 `;
 
@@ -68,6 +75,7 @@ export function initShaders(gl) {
 
     shaderProgram.positionLocation = gl.getAttribLocation(shaderProgram, "position");
     shaderProgram.transformLocation = gl.getUniformLocation(shaderProgram, "transform");
+    shaderProgram.colorLocation = gl.getUniformLocation(shaderProgram, "color");
     shaderProgram.cameraTransformLocation = gl.getUniformLocation(shaderProgram, "cameraTransform");
 
     gl.enableVertexAttribArray(shaderProgram.positionLocation);
@@ -86,7 +94,8 @@ export function degToRad(deg) {
  * @returns void
  */
 export function createTriangle(gl, shaderProgram) {
-    let vertices = [
+    const color = [0.5, 0.0, 0.5, 1.0];
+    const vertices = [
         0.0, 1.0, 0.0,
         -1.0, -1.0, 0.0,
         1.0, -1.0, 0.0
@@ -108,11 +117,13 @@ export function createTriangle(gl, shaderProgram) {
         // Position our triangle
         mat4.identity(mvMatrix);
         mat4.translate (mvMatrix, mvMatrix, [0, 0, -3]);
+        // mat4.rotateZ(mvMatrix, mvMatrix, degToRad(180));
 
         // Pass model view projection to shader
         // gl.uniformMatrix4fv(shader_prog.u_PerspLocation, false, pMatrix);
         gl.uniformMatrix4fv(shaderProgram.transformLocation, false, mvMatrix);
         gl.uniformMatrix4fv(shaderProgram.cameraTransformLocation, false, pMatrix);
+        gl.uniform4fv(shaderProgram.colorLocation, new Float32Array(color));
 
         // Add vertex data and prep the variable type.
         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
@@ -147,7 +158,6 @@ export function create(elm) {
         renderTriangle(pMatrix);
     }
 }
-
 
 export function gl(elm) {
     const draw = create(elm);
