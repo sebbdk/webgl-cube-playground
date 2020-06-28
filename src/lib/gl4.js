@@ -1,3 +1,6 @@
+// Render a TRIANGLE_STRIP box
+// Animation
+
 import { mat4, vec3 } from "gl-matrix";
 
 /** @type {WebGLRenderingContext} */
@@ -93,12 +96,30 @@ export function degToRad(deg) {
  *
  * @returns void
  */
-export function createTriangle(gl, shaderProgram) {
+export function createPlane(gl, shaderProgram) {
     const color = [ 0.5, 0.0, 0.5, 1.0 ];
-    const vertices = [
-        0.0, 1.0, 0.0,
+    let vertices = [
+        -1.0, 1.0, 0.0,
         -1.0, -1.0, 0.0,
-        1.0, -1.0, 0.0
+        1.0, -1.0, 0.0,
+        1.0, 1.0, 0.0
+    ];
+
+    vertices = [
+        -1.0, 1.0, 1.0,     // Front-top-left
+        1.0, 1.0, 1.0,      // Front-top-right
+        -1.0, -1.0, 1.0,    // Front-bottom-left
+        1.0, -1.0, 1.0,     // Front-bottom-right
+        1.0, -1.0, -1.0,    // Back-bottom-right
+        1.0, 1.0, 1.0,      // Front-top-right
+        1.0, 1.0, -1.0,     // Back-top-right
+        -1.0, 1.0, 1.0,     // Front-top-left
+        -1.0, 1.0, -1.0,    // Back-top-left
+        -1.0, -1.0, 1.0,    // Front-bottom-left
+        -1.0, -1.0, -1.0,   // Back-bottom-left
+        1.0, -1.0, -1.0,    // Back-bottom-right
+        -1.0, 1.0, -1.0,    // Back-top-left
+        1.0, 1.0, -1.0      // Back-top-right
     ];
 
     /** @type {WebGLBuffer} */
@@ -109,15 +130,19 @@ export function createTriangle(gl, shaderProgram) {
 
     // Position, rotation etc. Matrix
     let mvMatrix = mat4.create();
-
-    return (pMatrix) => {
+    let rotation = 0;
+    return (pMatrix, delta) => {
         // Set shader to use
         gl.useProgram(shaderProgram);
 
+        rotation = rotation + delta*0.05;
+
         // Position our triangle
         mat4.identity(mvMatrix);
-        mat4.translate (mvMatrix, mvMatrix, [0, 0, -3]);
-        // mat4.rotateZ(mvMatrix, mvMatrix, degToRad(180));
+        mat4.translate (mvMatrix, mvMatrix, [0, 0, -5]);
+        mat4.rotateY(mvMatrix, mvMatrix, degToRad(rotation));
+        mat4.rotateZ(mvMatrix, mvMatrix, degToRad(rotation));
+        mat4.rotateX(mvMatrix, mvMatrix, degToRad(rotation));
 
         // Pass model view projection to shader
         gl.uniformMatrix4fv(shaderProgram.transformLocation, false, mvMatrix);
@@ -130,7 +155,7 @@ export function createTriangle(gl, shaderProgram) {
         gl.vertexAttribPointer(shaderProgram.positionLocation, 3, gl.FLOAT, false, 0, 0);
 
         //draw it!
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 14);
     };
 }
 
@@ -141,7 +166,7 @@ export function create(elm) {
     // Setup webgl
     const gl = createCtx(elm);
     const shaderProgram = initShaders(gl);
-    const renderTriangle = createTriangle(gl, shaderProgram);
+    const renderPlane = createPlane(gl, shaderProgram);
 
     gl.clearColor(0.75, 0.85, 0.8, 1);
     gl.enable(gl.DEPTH_TEST);
@@ -153,15 +178,39 @@ export function create(elm) {
     //mat4.translate (pMatrix, pMatrix, [0, 0, -3]); // Use this to move camera around
     //mat4.rotateY(pMatrix, pMatrix, degToRad(30)); // Turn camera
 
-    return () => {
-        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        renderTriangle(pMatrix);
+    return () => {
+
+        const fps = 10;
+        let last = performance.now();
+
+
+        function render() {
+            const delta = performance.now()-last;
+            const deltaTime = delta / (1000 / fps);
+
+            last = performance.now();
+
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            renderPlane(pMatrix, delta);
+
+            window.requestAnimationFrame(() => {
+                // drop frames if called too often
+                //render();
+            });
+
+            setTimeout(() => {
+                render();
+            }, 30);
+        }
+
+        render();
     }
 }
 
 export function gl(elm) {
-    const draw = create(elm);
-    draw();
+    const run = create(elm);
+    run();
 }
