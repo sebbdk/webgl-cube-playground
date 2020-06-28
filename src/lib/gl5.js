@@ -166,8 +166,8 @@ export function createPlane(gl, shaderProgram) {
         mat4.identity(mvMatrix);
         mat4.translate(mvMatrix, mvMatrix, [0, 0, -5]);
         mat4.rotateY(mvMatrix, mvMatrix, degToRad(rotation));
-        //mat4.rotateZ(mvMatrix, mvMatrix, degToRad(rotation));
-        //mat4.rotateX(mvMatrix, mvMatrix, degToRad(rotation));
+        mat4.rotateZ(mvMatrix, mvMatrix, degToRad(rotation));
+        mat4.rotateX(mvMatrix, mvMatrix, degToRad(rotation));
 
         // Pass model view projection to shader
         gl.uniformMatrix4fv(shaderProgram.transformLocation, false, mvMatrix);
