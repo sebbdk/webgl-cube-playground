@@ -1,33 +1,18 @@
-// Render a plane based box + colors
-
-import { mat4, vec3 } from "gl-matrix";
-
-/** @type {WebGLRenderingContext} */
-export function createCtx(elm) {
-    /** @type {HTMLCanvasElement} */
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('width', '600px');
-    canvas.setAttribute('height', '400px');
-    elm.appendChild(canvas);
-
-    const gl = canvas.getContext('webgl');
-    gl.viewportWidth = canvas.width;
-    gl.viewportHeight = canvas.height;
-    return gl;
-}
+import { mat4 } from 'gl-matrix';
+import { degToRad } from './misc';
+import { getVShader, getTShader } from './shader';
 
 // Fragment shader
-const fsShader = `
+export const fsShader = `
     varying lowp vec4 vColor;
 
     void main(void) {
-        //gl_FragColor = vec4(0.5, 0, 0.5, 1);
         gl_FragColor = vColor;
     }
 `;
 
 // vertex shader
-const vsShader = `
+export const vsShader = `
     attribute vec3 position;
 
     uniform vec4 color;
@@ -42,26 +27,6 @@ const vsShader = `
         vColor = color;
     }
 `;
-
-export function createShader(gl, source, type) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        throw("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));
-    }
-
-    return shader;
-}
-
-export function getVShader(gl, source) {
-    return createShader(gl, source, gl.VERTEX_SHADER);
-}
-
-export function getTShader(gl, source) {
-    return createShader(gl, source, gl.FRAGMENT_SHADER);
-}
 
 /** @type WebGLProgram */
 export function initShaders(gl) {
@@ -85,19 +50,8 @@ export function initShaders(gl) {
     return shaderProgram;
 }
 
-export function degToRad(deg) {
-    return deg * (Math.PI / 180);
-}
-
-/**
- * @param {WebGLRenderingContext} gl
- * @param {Object} shaderProgram
- *
- * @returns void
- */
-export function createPlane(gl, shaderProgram) {
-    const color = [ 0.5, 0.0, 0.5, 1.0 ];
-    let vertices = [
+export function createVertices() {
+    return [
         // Back
         -1.0, 1.0, -1.0,
         -1.0, -1.0, -1.0,
@@ -146,6 +100,18 @@ export function createPlane(gl, shaderProgram) {
         1.0, -1.0, 1.0,
         1.0, -1.0, -1.0,
     ];
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {Object} shaderProgram
+ *
+ * @returns void
+ */
+export function createPlaneCube(gl) {
+    const shaderProgram = initShaders(gl);
+    const vertices = createVertices();
+    const color = [ 0.5, 0.0, 0.5, 1.0 ];
 
     /** @type {WebGLBuffer} */
     const vertBuffer = gl.createBuffer();
@@ -156,6 +122,7 @@ export function createPlane(gl, shaderProgram) {
     // Position, rotation etc. Matrix
     let mvMatrix = mat4.create();
     let rotation = 0;
+
     return (pMatrix, delta) => {
         // Set shader to use
         gl.useProgram(shaderProgram);
@@ -182,58 +149,4 @@ export function createPlane(gl, shaderProgram) {
         //draw it!
         gl.drawArrays(gl.TRIANGLES, 0, 33);
     };
-}
-
-export function create(elm) {
-    // Configurables
-    const fieldOfView = degToRad(60);
-
-    // Setup webgl
-    const gl = createCtx(elm);
-    const shaderProgram = initShaders(gl);
-    const renderPlane = createPlane(gl, shaderProgram);
-
-    gl.clearColor(0.75, 0.85, 0.8, 1);
-    gl.enable(gl.DEPTH_TEST);
-
-    // Prepare perspective matrix
-    const pMatrix = mat4.create();
-
-    mat4.perspective(pMatrix, fieldOfView, gl.viewportWidth / gl.viewportHeight, 0.1, 50.0);
-    //mat4.translate (pMatrix, pMatrix, [0, 0, -3]); // Use this to move camera around
-    //mat4.rotateY(pMatrix, pMatrix, degToRad(30)); // Turn camera
-
-
-    return () => {
-        const fps = 10;
-        let last = performance.now();
-
-        function render() {
-            const delta = performance.now()-last;
-            const deltaTime = delta / (1000 / fps);
-
-            last = performance.now();
-
-            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-            renderPlane(pMatrix, delta);
-
-            window.requestAnimationFrame(() => {
-                // drop frames if called too often
-                //render();
-            });
-
-            setTimeout(() => {
-                render();
-            }, 30);
-        }
-
-        render();
-    }
-}
-
-export function gl(elm) {
-    const run = create(elm);
-    run();
 }

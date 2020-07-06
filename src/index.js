@@ -1,3 +1,3 @@
-import { gl } from "/lib/gl5";
+import { gl } from "/lib/gl6";
 
 gl(document.getElementById('app'));
