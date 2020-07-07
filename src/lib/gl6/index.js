@@ -2,8 +2,11 @@
 import { mat4 } from "gl-matrix";
 import { degToRad } from './misc';
 import { createCtx } from './canvas';
-import { createPlaneCube } from './planecube';
+import { createPlaneCube } from './objects/planecube-colored';
 
+/**
+ * @param {Element} elm
+ */
 export function createApp(elm) {
     // Setup webgl
     const gl = createCtx(elm);
@@ -48,6 +51,9 @@ export function createApp(elm) {
     }
 }
 
+/**
+ * @param {Element} elm
+ */
 export function gl(elm) {
     const start = createApp(elm);
     start();

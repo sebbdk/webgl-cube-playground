@@ -1,6 +1,6 @@
 import { mat4 } from 'gl-matrix';
-import { degToRad } from './misc';
-import { getVShader, getTShader } from './shader';
+import { degToRad } from '../misc';
+import { getVShader, getTShader } from '../shader';
 
 // Fragment shader
 export const fsShader = `
@@ -28,7 +28,13 @@ export const vsShader = `
     }
 `;
 
-/** @type WebGLProgram */
+/**
+ * Initshaders
+ *
+ * @param {WebGLProgram} gl
+ *
+ * return any
+ */
 export function initShaders(gl) {
     const shaderProgram = gl.createProgram();
 
@@ -106,7 +112,7 @@ export function createVertices() {
  * @param {WebGLRenderingContext} gl
  * @param {Object} shaderProgram
  *
- * @returns void
+ * @returns {Function}
  */
 export function createPlaneCube(gl) {
     const shaderProgram = initShaders(gl);
