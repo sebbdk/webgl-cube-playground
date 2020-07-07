@@ -129,6 +129,11 @@ export function createPlaneCube(gl) {
     let mvMatrix = mat4.create();
     let rotation = 0;
 
+    // Add vertex data and prep the variable type.
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+    gl.enableVertexAttribArray(shaderProgram.positionLocation);
+    gl.vertexAttribPointer(shaderProgram.positionLocation, 3, gl.FLOAT, false, 0, 0);
+
     return (pMatrix, delta) => {
         // Set shader to use
         gl.useProgram(shaderProgram);
@@ -146,11 +151,6 @@ export function createPlaneCube(gl) {
         gl.uniformMatrix4fv(shaderProgram.transformLocation, false, mvMatrix);
         gl.uniformMatrix4fv(shaderProgram.cameraTransformLocation, false, pMatrix);
         gl.uniform4fv(shaderProgram.colorLocation, new Float32Array(color));
-
-        // Add vertex data and prep the variable type.
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
-        gl.enableVertexAttribArray(shaderProgram.positionLocation);
-        gl.vertexAttribPointer(shaderProgram.positionLocation, 3, gl.FLOAT, false, 0, 0);
 
         //draw it!
         gl.drawArrays(gl.TRIANGLES, 0, 33);

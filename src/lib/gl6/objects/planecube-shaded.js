@@ -62,6 +62,18 @@ export function createVertices() {
     ];
 }
 
+// B|F|T|B|L|R
+export function createNormalData() {
+    return [
+        ...repeat(6, [0, 0, -1]), // -Z
+        ...repeat(6, [0, 0, 1]),  // +Z
+        ...repeat(6, [0, 1, 0]),  // +Y
+        ...repeat(6, [0, -1, 0]), // -Y
+        ...repeat(6, [-1, 0, 0]), // -X
+        ...repeat(6, [1, 0, 0]),  // +X
+    ]
+}
+
 // Fragment shader
 export const fsShader = `
     varying lowp vec3 vColor;
